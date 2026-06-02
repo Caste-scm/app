@@ -21,7 +21,7 @@ const PRODUCT_IMAGES = [
 ];
 
 const SPECS = [
-  { label: 'Capacity', value: '20 oz / 600 ml' },
+  { label: 'Capacity', value: '10 FL oz' },
   { label: 'Material', value: '304 Stainless Steel, Food-Grade Silicone' },
   { label: 'Dimensions', value: '3.5" x 3.5" x 6"' },
   { label: 'Weight', value: '8 oz (empty)' },

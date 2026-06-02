@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Instagram, Facebook } from 'lucide-react';
@@ -23,6 +23,16 @@ function TikTokIcon({ size = 20 }: { size?: number }) {
 
 export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSubscribed(true);
+      setEmail('');
+    }
+  };
 
   useEffect(() => {
     const footer = footerRef.current;
@@ -92,16 +102,25 @@ export default function Footer() {
           {/* Newsletter */}
           <div className="footer-animate">
             <h4 className="text-label text-white mb-4">Stay Updated</h4>
-            <div className="flex">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 rounded-l-pill bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.2)] border-r-0 px-4 py-2.5 text-sm text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-brand-turquoise"
-              />
-              <button className="rounded-r-pill bg-brand-turquoise text-charcoal-deep text-label px-5 py-2.5 hover:bg-brand-dark transition-colors">
-                Subscribe
-              </button>
-            </div>
+            {subscribed ? (
+              <div className="bg-[#CCFBF1] text-brand-dark px-4 py-3 rounded-xl text-sm font-medium border border-[#99f6e4]">
+                Grazie per l'iscrizione! Controlla la tua email.
+              </div>
+            ) : (
+              <form className="flex" onSubmit={handleSubscribe}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="flex-1 rounded-l-pill bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.2)] border-r-0 px-4 py-2.5 text-sm text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-brand-turquoise"
+                />
+                <button type="submit" className="rounded-r-pill bg-brand-turquoise text-charcoal-deep text-label px-5 py-2.5 hover:bg-brand-dark transition-colors">
+                  Subscribe
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

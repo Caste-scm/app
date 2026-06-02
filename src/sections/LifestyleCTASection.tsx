@@ -87,13 +87,10 @@ export default function LifestyleCTASection() {
           — The Leap Team
         </p>
         <div className="cta-animate mt-10">
-          <PillButton variant="filled" size="lg" className="animate-pulse-glow">
+          <PillButton variant="filled" size="lg" className="animate-pulse-glow" onClick={() => window.location.href = '/checkout'}>
             Start Your Adventure
           </PillButton>
         </div>
-        <p className="cta-animate font-mono text-[12px] text-[rgba(255,255,255,0.6)] mt-4">
-          Free shipping on orders over $50
-        </p>
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useNavigate } from 'react-router';
 import { ChevronDown, Play, Droplets, Lock, Leaf } from 'lucide-react';
 import PillButton from '@/components/PillButton';
 import TextRevealAnimation from '@/components/TextRevealAnimation';
@@ -32,6 +33,15 @@ export default function HeroSection() {
   const scrollIndicatorRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [activeColor, setActiveColor] = useState('Turchese');
+  const [quantity, setQuantity] = useState(1);
+  const [bundleMix, setBundleMix] = useState('both-turchese');
+  const navigate = useNavigate();
+
+  const handleShopNow = () => {
+    const colorParam = quantity === 2 ? bundleMix : activeColor;
+    window.location.href = `/checkout?color=${colorParam}&qty=${quantity}`;
+  };
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -122,10 +132,95 @@ export default function HeroSection() {
           food-grade silicone for instant hydration anywhere.
         </p>
 
+        {/* Selection Area */}
+        <div className="mt-8 flex flex-col items-center gap-6 w-full max-w-sm">
+          {/* Color Selectors */}
+          <div className="flex justify-center gap-4 w-full">
+            <button 
+              onClick={() => setActiveColor('Turchese')}
+              className={`flex-1 group flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${activeColor === 'Turchese' ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
+            >
+              <div className="w-5 h-5 rounded-full bg-brand-turquoise shadow-sm" />
+              <span className={`text-sm font-bold uppercase tracking-wider ${activeColor === 'Turchese' ? 'text-charcoal-deep' : 'text-body'}`}>Turchese</span>
+            </button>
+            <button 
+              onClick={() => {
+                setActiveColor('Rosa');
+                if (quantity === 2) setBundleMix('both-rosa');
+              }}
+              className={`flex-1 group flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${activeColor === 'Rosa' ? 'border-[#E5B6D6] bg-[#F9E8F4]' : 'border-silver bg-white hover:border-gray-300'}`}
+            >
+              <div className="w-5 h-5 rounded-full bg-[#E5B6D6] shadow-sm" />
+              <span className={`text-sm font-bold uppercase tracking-wider ${activeColor === 'Rosa' ? 'text-charcoal-deep' : 'text-body'}`}>Rosa Steel</span>
+            </button>
+          </div>
+
+          {/* Quantity Selectors */}
+          <div className="flex gap-4 w-full">
+            <button 
+              onClick={() => setQuantity(1)}
+              className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl border-2 transition-all ${quantity === 1 ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
+            >
+              <span className={`text-sm font-bold ${quantity === 1 ? 'text-charcoal-deep' : 'text-body'}`}>1 Bottiglia</span>
+              <span className={`text-xs ${quantity === 1 ? 'text-charcoal-deep' : 'text-body'}`}>€15.99</span>
+            </button>
+            <button 
+              onClick={() => {
+                setQuantity(2);
+                setBundleMix(activeColor === 'Turchese' ? 'both-turchese' : 'both-rosa');
+              }}
+              className={`flex-1 relative flex flex-col items-center justify-center py-3 rounded-xl border-2 transition-all ${quantity === 2 ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
+            >
+              <div className="absolute -top-3 bg-brand-turquoise text-charcoal-deep text-[10px] font-bold px-2 py-0.5 rounded-full">SCONTO 12%</div>
+              <span className={`text-sm font-bold ${quantity === 2 ? 'text-charcoal-deep' : 'text-body'}`}>2 Bottiglie</span>
+              <span className={`text-xs font-bold ${quantity === 2 ? 'text-charcoal-deep text-brand-turquoise' : 'text-body'}`}>€28.00</span>
+            </button>
+          </div>
+
+          {/* Bundle Mix Selection - Only visible when quantity 2 is selected */}
+          {quantity === 2 && (
+            <div className="w-full animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-body mb-3 text-center">Scegli la combinazione:</p>
+              <div className="grid grid-cols-3 gap-2">
+                <button 
+                  onClick={() => setBundleMix('both-turchese')}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${bundleMix === 'both-turchese' ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white'}`}
+                >
+                  <div className="flex -space-x-1">
+                    <div className="w-4 h-4 rounded-full bg-brand-turquoise border border-white" />
+                    <div className="w-4 h-4 rounded-full bg-brand-turquoise border border-white" />
+                  </div>
+                  <span className="text-[9px] font-bold leading-tight uppercase">2 Azzurre</span>
+                </button>
+                <button 
+                  onClick={() => setBundleMix('both-rosa')}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${bundleMix === 'both-rosa' ? 'border-[#E5B6D6] bg-[#F9E8F4]' : 'border-silver bg-white'}`}
+                >
+                  <div className="flex -space-x-1">
+                    <div className="w-4 h-4 rounded-full bg-[#E5B6D6] border border-white" />
+                    <div className="w-4 h-4 rounded-full bg-[#E5B6D6] border border-white" />
+                  </div>
+                  <span className="text-[9px] font-bold leading-tight uppercase">2 Rosa</span>
+                </button>
+                <button 
+                  onClick={() => setBundleMix('one-each')}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${bundleMix === 'one-each' ? 'border-charcoal-deep bg-gray-50' : 'border-silver bg-white'}`}
+                >
+                  <div className="flex -space-x-1">
+                    <div className="w-4 h-4 rounded-full bg-brand-turquoise border border-white" />
+                    <div className="w-4 h-4 rounded-full bg-[#E5B6D6] border border-white" />
+                  </div>
+                  <span className="text-[9px] font-bold leading-tight uppercase">1 e 1</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* CTA Row */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <PillButton variant="filled" size="md">
-            Shop Now
+          <PillButton variant="filled" size="md" onClick={handleShopNow}>
+            Acquista Ora - €{quantity === 2 ? '28.00' : '15.99'}
           </PillButton>
           <PillButton
             variant="outlined"
@@ -146,9 +241,9 @@ export default function HeroSection() {
       >
         <div className="product-image relative w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px]">
           <img
-            src="/assets/bottle-cutout.png"
+            src={activeColor === 'Rosa' ? '/assets/bottle-rosa.jpg' : '/assets/bottle-cutout.png'}
             alt="Leap Spherical Dog Water Bottle"
-            className="w-full h-full object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
+            className="w-full h-full object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-500"
           />
         </div>
       </div>

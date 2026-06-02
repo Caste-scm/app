@@ -43,6 +43,10 @@ export default function NavigationBar() {
 
   const handleNavClick = (href: string) => {
     setMobileOpen(false);
+    if (href.startsWith('/')) {
+      window.location.href = href;
+      return;
+    }
     const el = document.querySelector(href);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -81,7 +85,7 @@ export default function NavigationBar() {
         {/* CTA */}
         <div className="hidden md:block">
           <button
-            onClick={() => handleNavClick('#hero')}
+            onClick={() => handleNavClick('/checkout')}
             className="rounded-pill bg-charcoal-deep text-white text-label px-6 py-2.5 hover:bg-charcoal transition-all duration-200"
           >
             Buy Now
@@ -111,7 +115,7 @@ export default function NavigationBar() {
               </button>
             ))}
             <button
-              onClick={() => handleNavClick('#hero')}
+              onClick={() => handleNavClick('/checkout')}
               className="rounded-pill bg-charcoal-deep text-white text-label px-6 py-3 mt-2 w-full"
             >
               Buy Now

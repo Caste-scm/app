@@ -76,7 +76,7 @@ export default function DogUsageSection() {
                 <img
                   src={feature.image}
                   alt={feature.title}
-                  className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-&lsqb;1.5s&sqb; group-hover:scale-105"
                 />
               </div>
             </div>
