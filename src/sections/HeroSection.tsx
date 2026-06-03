@@ -231,7 +231,7 @@ export default function HeroSection() {
         {/* CTA Row */}
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
           <PillButton variant="filled" size="md" onClick={handleShopNow} className={totalQty === 0 ? "opacity-50 cursor-not-allowed" : ""}>
-            {totalQty === 0 ? 'Seleziona Quantità' : `Acquista Ora - €${totalAmount.toFixed(2)}`}
+            {totalQty === 0 ? 'Select Quantity' : `Buy Now - \u20ac${totalAmount.toFixed(2)}`}
           </PillButton>
           <PillButton
             variant="outlined"

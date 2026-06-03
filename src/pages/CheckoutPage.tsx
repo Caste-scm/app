@@ -91,7 +91,7 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
   return (
     <form id="payment-form" onSubmit={handleSubmit} className="w-full max-w-md mx-auto mt-8">
       <div className="mb-8">
-        <h3 className="text-sm font-bold text-charcoal-deep mb-4">Dati di Consegna e Fatturazione</h3>
+        <h3 className="text-sm font-bold text-charcoal-deep mb-4">Shipping & Billing Details</h3>
         <AddressElement options={{ 
           mode: 'shipping', 
           allowedCountries: ['IT'],
@@ -106,7 +106,7 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
         className="mt-6 w-full rounded-pill bg-brand-turquoise text-charcoal-deep font-bold px-6 py-3 hover:bg-[#20b2a6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span id="button-text">
-          {isLoading ? <div className="spinner">Elaborazione...</div> : `Paga ora: €${totalAmount.toFixed(2)}`}
+          {isLoading ? <div className="spinner">Processing...</div> : `Pay Now: €${totalAmount.toFixed(2)}`}
         </span>
       </button>
       {message && <div id="payment-message" className="mt-4 text-center text-sm font-medium text-red-500">{message}</div>}
@@ -152,13 +152,13 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col page-padding py-12">
       <button onClick={() => navigate(-1)} className="flex items-center text-body mb-8 hover:text-brand-turquoise transition-colors w-fit">
-        <ArrowLeft className="mr-2" size={20} /> Torna indietro
+        <ArrowLeft className="mr-2" size={20} /> Go Back
       </button>
 
       <div className="flex-1 flex flex-col md:flex-row gap-12 max-w-[1000px] mx-auto w-full items-start">
         {/* Riepilogo Ordine */}
         <div className="w-full md:w-1/2 bg-white rounded-3xl p-8 border border-silver shadow-sm">
-          <h2 className="text-h3 mb-6">Riepilogo Ordine</h2>
+          <h2 className="text-h3 mb-6">Order Summary</h2>
           
           {/* Line items */}
           <div className="flex flex-col gap-4">
@@ -191,21 +191,21 @@ export default function CheckoutPage() {
 
           <div className="mt-8 border-t border-silver pt-6">
             <div className="flex justify-between mb-3 text-body text-sm">
-              <span>Subtotale ({totalQty} {totalQty === 1 ? 'bottiglia' : 'bottiglie'})</span>
+              <span>Subtotal ({totalQty} {totalQty === 1 ? 'bottle' : 'bottles'})</span>
               <span>€{subtotal.toFixed(2)}</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between mb-3 text-sm">
-                <span className="text-brand-turquoise font-bold">Sconto {(discount * 100).toFixed(0)}%</span>
+                <span className="text-brand-turquoise font-bold">Discount {(discount * 100).toFixed(0)}%</span>
                 <span className="text-brand-turquoise font-bold">-€{(subtotal - totalAmount).toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between mb-3 text-body text-sm">
-              <span>Spedizione</span>
-              <span className="text-brand-turquoise">Gratuita</span>
+              <span>Shipping</span>
+              <span className="text-brand-turquoise">Free</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-silver pt-4">
-              <span>Totale</span>
+              <span>Total</span>
               <span>€{totalAmount.toFixed(2)}</span>
             </div>
           </div>
@@ -213,11 +213,11 @@ export default function CheckoutPage() {
 
         {/* Form Pagamento */}
         <div className="w-full md:w-1/2">
-          <h2 className="text-h3 mb-6">Pagamento Sicuro</h2>
+          <h2 className="text-h3 mb-6">Secure Payment</h2>
           
           {!clientSecret ? (
             <div className="text-center py-10 text-body">
-              {loadingContext ? 'Inizializzazione pagamento sicuro...' : 'Errore nel caricamento del gateway di pagamento.'}
+              {loadingContext ? 'Initializing secure payment...' : 'Error loading payment gateway.'}
             </div>
           ) : (
               <Elements 
@@ -228,7 +228,7 @@ export default function CheckoutPage() {
                 stripe={stripePromise}
               >
                 <div className="mb-6 bg-white p-4 rounded-xl border border-silver">
-                  <p className="text-sm text-body mb-4">Informazioni di Spedizione</p>
+                  <p className="text-sm text-body mb-4">Shipping Information</p>
                   <CheckoutForm totalAmount={totalAmount} />
                 </div>
               </Elements>

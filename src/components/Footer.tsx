@@ -96,7 +96,7 @@ export default function Footer() {
             <h4 className="text-label text-white mb-4">Stay Updated</h4>
             {subscribed ? (
               <div className="bg-[#CCFBF1] text-brand-dark px-4 py-3 rounded-xl text-sm font-medium border border-[#99f6e4]">
-                Grazie per l'iscrizione! Controlla la tua email.
+                Thanks for subscribing! Check your email.
               </div>
             ) : (
               <form className="flex" onSubmit={handleSubscribe}>

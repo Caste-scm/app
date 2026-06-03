@@ -29,10 +29,10 @@ export default function AdminLogin() {
         login(data.token);
         navigate('/admin');
       } else {
-        setError(data.error || 'Credenziali non valide');
+        setError(data.error || 'Invalid credentials');
       }
     } catch (err) {
-      setError('Errore di connessione al server.');
+      setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -47,8 +47,8 @@ export default function AdminLogin() {
           </div>
         </div>
         
-        <h1 className="text-h3 text-center mb-2">Area Amministratore</h1>
-        <p className="text-body text-sm text-center mb-8">Effettua il login per accedere alla dashboard</p>
+        <h1 className="text-h3 text-center mb-2">Admin Area</h1>
+        <p className="text-body text-sm text-center mb-8">Log in to access the dashboard</p>
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-6 text-center border border-red-100">
@@ -83,7 +83,7 @@ export default function AdminLogin() {
             disabled={loading}
             className="mt-4 rounded-pill bg-charcoal-deep text-white font-bold py-3 hover:bg-charcoal transition-colors disabled:opacity-50"
           >
-            {loading ? 'Accesso in corso...' : 'Accedi'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       </div>

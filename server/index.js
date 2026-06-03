@@ -189,7 +189,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
     const subtotal = totalQty * basePrice;
     const amount = Math.round(subtotal * (1 - discount));
 
-    if (amount <= 0) return res.status(400).json({ error: 'Quantità non valida' });
+    if (amount <= 0) return res.status(400).json({ error: 'Invalid quantity' });
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
@@ -267,11 +267,11 @@ app.post('/api/admin/login', async (req, res) => {
   
   try {
     const result = await db.query('SELECT * FROM admin_users WHERE email = $1', [email]);
-    if (result.rowCount === 0) return res.status(401).json({ error: 'Utente non trovato' });
+    if (result.rowCount === 0) return res.status(401).json({ error: 'User not found' });
     
     const user = result.rows.find(u => u.email === email);
     const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) return res.status(401).json({ error: 'Password errata' });
+    if (!match) return res.status(401).json({ error: 'Wrong password' });
 
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token });
