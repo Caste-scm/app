@@ -41,8 +41,27 @@ export default function NavigationBar() {
     };
   }, []);
 
+  const getCheckoutUrl = () => {
+    try {
+      const saved = localStorage.getItem('leap_cart');
+      if (saved) {
+        const { qtyTurchese, qtyRosa } = JSON.parse(saved);
+        if (qtyTurchese > 0 || qtyRosa > 0) {
+          return `/checkout?turchese=${qtyTurchese}&rosa=${qtyRosa}`;
+        }
+      }
+    } catch (e) {
+      console.error('Error reading cart', e);
+    }
+    return '/checkout?turchese=1&rosa=0'; // Default
+  };
+
   const handleNavClick = (href: string) => {
     setMobileOpen(false);
+    if (href === '/checkout') {
+      window.location.href = getCheckoutUrl();
+      return;
+    }
     if (href.startsWith('/')) {
       window.location.href = href;
       return;
@@ -63,10 +82,9 @@ export default function NavigationBar() {
     >
       <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between page-padding">
         {/* Logo */}
-        <a href="#" className="text-label text-charcoal-deep flex items-center gap-0">
-          <span>LE</span>
-          <span className="text-brand-turquoise">A</span>
-          <span>P</span>
+        <a href="/" className="flex items-center gap-2 group">
+          <img src="/assets/logo.png" alt="LEAP Logo" className="h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110" />
+          <span className="text-[14px] font-bold tracking-[0.2em] text-charcoal-deep">LEAP</span>
         </a>
 
         {/* Desktop Nav */}
@@ -115,7 +133,7 @@ export default function NavigationBar() {
               </button>
             ))}
             <button
-              onClick={() => handleNavClick('/checkout')}
+            onClick={() => handleNavClick('/checkout')}
               className="rounded-pill bg-charcoal-deep text-white text-label px-6 py-3 mt-2 w-full"
             >
               Buy Now

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Instagram, Facebook } from 'lucide-react';
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -13,13 +13,6 @@ const QUICK_LINKS = [
   { label: 'FAQ', href: '#faq' },
 ];
 
-function TikTokIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
-    </svg>
-  );
-}
 
 export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
@@ -72,11 +65,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
           {/* Brand */}
           <div className="footer-animate">
-            <h3 className="text-h3 text-white mb-3 flex items-center gap-0">
-              <span>LE</span>
-              <span className="text-brand-turquoise">A</span>
-              <span>P</span>
-            </h3>
+          <div className="footer-animate flex items-center gap-2 mb-3">
+            <img src="/assets/logo.png" alt="LEAP Logo" className="h-7 w-7 object-contain" />
+            <h3 className="text-[14px] font-bold tracking-[0.2em] text-white">LEAP</h3>
+          </div>
             <p className="text-body text-[rgba(255,255,255,0.6)]">
               Innovative hydration for modern dogs.
             </p>
@@ -121,24 +113,6 @@ export default function Footer() {
                 </button>
               </form>
             )}
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="footer-animate mt-10 pt-6 border-t border-[rgba(255,255,255,0.1)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs font-mono text-[rgba(255,255,255,0.4)]">
-            2025 Leap Pet Essentials. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4">
-            <button className="text-[rgba(255,255,255,0.4)] hover:text-brand-turquoise transition-colors">
-              <Instagram size={20} />
-            </button>
-            <button className="text-[rgba(255,255,255,0.4)] hover:text-brand-turquoise transition-colors">
-              <TikTokIcon size={20} />
-            </button>
-            <button className="text-[rgba(255,255,255,0.4)] hover:text-brand-turquoise transition-colors">
-              <Facebook size={20} />
-            </button>
           </div>
         </div>
       </div>

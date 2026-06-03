@@ -85,10 +85,24 @@ app.use(express.json());
 // ==========================================
 
 app.post('/api/create-payment-intent', async (req, res) => {
-  console.log('Ricevuta richiesta di pagamento per:', req.body.email);
+  console.log('Ricevuta richiesta di pagamento:', req.body);
   try {
-    const { email } = req.body;
-    const amount = 1599; // €15.99 in centesimi
+    const { email, qtyTurchese = 0, qtyRosa = 0 } = req.body;
+    const totalQty = (parseInt(qtyTurchese) || 0) + (parseInt(qtyRosa) || 0);
+    
+    // Same discount tiers as frontend
+    let discount = 0;
+    if (totalQty >= 4) discount = 0.25;
+    else if (totalQty === 3) discount = 0.20;
+    else if (totalQty === 2) discount = 0.15;
+
+    const basePrice = 1599; // €15.99 in cents
+    const subtotal = totalQty * basePrice;
+    const amount = Math.round(subtotal * (1 - discount));
+
+    if (amount <= 0) {
+      return res.status(400).json({ error: 'Quantità non valida' });
+    }
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,

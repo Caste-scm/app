@@ -4,20 +4,37 @@ import { Elements, PaymentElement, useStripe, useElements, AddressElement } from
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
-// Make sure to call loadStripe outside of a component's render to avoid recreating the Stripe object on every render.
-// We use a fallback key to prevent crashes while the .env is empty.
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_123');
 
-function CheckoutForm() {
+const BASE_PRICE = 15.99;
+
+function getDiscount(totalQty: number): number {
+  if (totalQty >= 4) return 0.25;
+  if (totalQty === 3) return 0.20;
+  if (totalQty === 2) return 0.15;
+  return 0;
+}
+
+function getCartFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  let qtyTurchese = Math.max(0, parseInt(params.get('turchese') || '0', 10));
+  let qtyRosa = Math.max(0, parseInt(params.get('rosa') || '0', 10));
+  // Fallback: se nessun parametro è presente, default a 1 Turchese
+  if (qtyTurchese === 0 && qtyRosa === 0) qtyTurchese = 1;
+  const totalQty = qtyTurchese + qtyRosa;
+  const discount = getDiscount(totalQty);
+  const subtotal = totalQty * BASE_PRICE;
+  const totalAmount = subtotal * (1 - discount);
+  return { qtyTurchese, qtyRosa, totalQty, discount, subtotal, totalAmount };
+}
+
+function CheckoutForm({ totalAmount }: { totalAmount: number }) {
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(window.location.search);
-  const variant = searchParams.get('color') || 'Turchese';
-  const quantity = parseInt(searchParams.get('qty') || '1', 10);
-  const totalAmount = quantity === 2 ? 28.00 : 15.99;
+  const { qtyTurchese, qtyRosa } = getCartFromURL();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +54,6 @@ function CheckoutForm() {
       console.error('Errore Stripe:', error);
       setMessage(error.message || 'An unexpected error occurred.');
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-      // Recuperiamo l'indirizzo inserito nel form prima di salvare nel DB
       const addressElement = elements.getElement('address');
       let shippingData = null;
       if (addressElement) {
@@ -48,7 +64,10 @@ function CheckoutForm() {
         };
       }
 
-      // Salviamo l'ordine istantaneamente nel nostro DB
+      const variantParts = [];
+      if (qtyTurchese > 0) variantParts.push(`${qtyTurchese}x Turchese`);
+      if (qtyRosa > 0) variantParts.push(`${qtyRosa}x Rosa Steel`);
+
       try {
         await fetch('/api/save-order', {
           method: 'POST',
@@ -56,14 +75,13 @@ function CheckoutForm() {
           body: JSON.stringify({
             paymentIntentId: paymentIntent.id,
             shipping: shippingData,
-            variant: quantity === 2 ? `${variant} (x2)` : variant
+            variant: variantParts.join(' + ')
           })
         });
       } catch (err) {
         console.error('Failed to sync order to DB', err);
       }
       
-      // Navighiamo subito senza ricaricare la pagina per evitare lag
       navigate('/checkout/success', { replace: true });
     }
     
@@ -98,23 +116,23 @@ function CheckoutForm() {
 
 export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState('');
-  const [email] = useState(''); // Removed setEmail as it is hardcoded for test for now
   const [loadingContext, setLoadingContext] = useState(false);
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(window.location.search);
-  const variant = searchParams.get('color') || 'Turchese';
-  const quantity = parseInt(searchParams.get('qty') || '1', 10);
-  const totalAmount = quantity === 2 ? 28.00 : 15.99;
+
+  const { qtyTurchese, qtyRosa, totalQty, discount, subtotal, totalAmount } = getCartFromURL();
 
   useEffect(() => {
-    // In un progetto reale, crei il payment intent quando entri in questa pagina
     const createIntent = async () => {
       setLoadingContext(true);
       try {
         const res = await fetch('/api/create-payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: [{ id: 'leap', quantity }], email: email || 'test@example.com' }),
+          body: JSON.stringify({ 
+            qtyTurchese, 
+            qtyRosa,
+            email: 'test@example.com' 
+          }),
         });
         const data = await res.json();
         if (data.clientSecret) {
@@ -129,18 +147,7 @@ export default function CheckoutPage() {
       }
     };
     createIntent();
-  }, [email]);
-
-  const isRosa = variant === 'Rosa' || variant === 'both-rosa';
-  const isMix = variant === 'one-each';
-  
-  const getVariantLabel = () => {
-    if (variant === 'both-turchese') return '2x Turchese';
-    if (variant === 'both-rosa') return '2x Rosa Steel';
-    if (variant === 'one-each') return '1 Turchese + 1 Rosa Steel';
-    if (variant === 'Rosa') return 'Rosa Steel';
-    return 'Turchese';
-  };
+  }, [qtyTurchese, qtyRosa]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col page-padding py-12">
@@ -152,36 +159,55 @@ export default function CheckoutPage() {
         {/* Riepilogo Ordine */}
         <div className="w-full md:w-1/2 bg-white rounded-3xl p-8 border border-silver shadow-sm">
           <h2 className="text-h3 mb-6">Riepilogo Ordine</h2>
-          <div className="flex gap-4 items-center">
-            <div className={`w-24 h-24 rounded-2xl flex items-center justify-center p-2 ${isRosa ? 'bg-[#F9E8F4]' : isMix ? 'bg-gray-100' : 'bg-[#CCFBF1]'}`}>
-              <div className="relative w-full h-full">
-                {isMix ? (
-                  <div className="flex -space-x-4 h-full w-full items-center justify-center">
-                    <img src="/assets/bottle-cutout.png" className="w-2/3 h-2/3 object-contain drop-shadow-md z-10" />
-                    <img src="/assets/bottle-rosa.jpg" className="w-2/3 h-2/3 object-contain drop-shadow-md" />
-                  </div>
-                ) : (
-                  <img 
-                    src={isRosa ? '/assets/bottle-rosa.jpg' : '/assets/bottle-cutout.png'} 
-                    alt="Leap Dog Water Bottle" 
-                    className="w-full h-full object-contain drop-shadow-md" 
-                  />
-                )}
+          
+          {/* Line items */}
+          <div className="flex flex-col gap-4">
+            {qtyTurchese > 0 && (
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-[#CCFBF1] flex items-center justify-center p-1.5">
+                  <img src="/assets/bottle-cutout.png" alt="Turchese" className="w-full h-full object-contain drop-shadow-md" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm">Leap Water Bottle</p>
+                  <p className="text-xs text-brand-turquoise font-bold">Turchese × {qtyTurchese}</p>
+                </div>
+                <span className="font-semibold text-sm">€{(qtyTurchese * BASE_PRICE).toFixed(2)}</span>
               </div>
-            </div>
-            <div>
-              <p className="font-bold text-lg">Leap Water Bottle {quantity === 2 ? '(Bundle 2)' : ''}</p>
-              <p className="text-body text-sm font-bold">Variante: <span className={isRosa ? 'text-[#BD7AA3]' : isMix ? 'text-charcoal-deep' : 'text-brand-turquoise'}>{getVariantLabel()}</span></p>
-            </div>
-            <div className="ml-auto flex flex-col items-end">
-              {quantity === 2 && <span className="text-xs text-body line-through">€31.98</span>}
-              <span className="font-serif italic text-xl">€{totalAmount.toFixed(2)}</span>
-            </div>
+            )}
+
+            {qtyRosa > 0 && (
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-[#F9E8F4] flex items-center justify-center p-1.5">
+                  <img src="/assets/bottle-rosa.jpg" alt="Rosa Steel" className="w-full h-full object-contain drop-shadow-md" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm">Leap Water Bottle</p>
+                  <p className="text-xs text-[#BD7AA3] font-bold">Rosa Steel × {qtyRosa}</p>
+                </div>
+                <span className="font-semibold text-sm">€{(qtyRosa * BASE_PRICE).toFixed(2)}</span>
+              </div>
+            )}
           </div>
+
           <div className="mt-8 border-t border-silver pt-6">
-            <div className="flex justify-between mb-4 text-body text-sm"><span>Subtotale {quantity === 2 && '(Sconto 12%)'}</span><span>€{totalAmount.toFixed(2)}</span></div>
-            <div className="flex justify-between mb-4 text-body text-sm"><span>Spedizione</span><span className="text-brand-turquoise">Gratuita</span></div>
-            <div className="flex justify-between font-bold text-lg border-t border-silver pt-4"><span>Totale</span><span>€{totalAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between mb-3 text-body text-sm">
+              <span>Subtotale ({totalQty} {totalQty === 1 ? 'bottiglia' : 'bottiglie'})</span>
+              <span>€{subtotal.toFixed(2)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex justify-between mb-3 text-sm">
+                <span className="text-brand-turquoise font-bold">Sconto {(discount * 100).toFixed(0)}%</span>
+                <span className="text-brand-turquoise font-bold">-€{(subtotal - totalAmount).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between mb-3 text-body text-sm">
+              <span>Spedizione</span>
+              <span className="text-brand-turquoise">Gratuita</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t border-silver pt-4">
+              <span>Totale</span>
+              <span>€{totalAmount.toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
@@ -198,13 +224,12 @@ export default function CheckoutPage() {
                 options={{ 
                   clientSecret, 
                   appearance: { theme: 'stripe' },
-                  // Chiediamo l'indirizzo di spedizione direttamente a Stripe
                 }} 
                 stripe={stripePromise}
               >
                 <div className="mb-6 bg-white p-4 rounded-xl border border-silver">
                   <p className="text-sm text-body mb-4">Informazioni di Spedizione</p>
-                  <CheckoutForm />
+                  <CheckoutForm totalAmount={totalAmount} />
                 </div>
               </Elements>
           )}

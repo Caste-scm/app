@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useNavigate } from 'react-router';
-import { ChevronDown, Play, Droplets, Lock, Leaf } from 'lucide-react';
+import { ChevronDown, Play, Droplets, Lock, Leaf, Plus, Minus } from 'lucide-react';
 import PillButton from '@/components/PillButton';
 import TextRevealAnimation from '@/components/TextRevealAnimation';
 import VideoModal from '@/components/VideoModal';
@@ -34,13 +34,27 @@ export default function HeroSection() {
   const cardsRef = useRef<HTMLDivElement>(null);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [activeColor, setActiveColor] = useState('Turchese');
-  const [quantity, setQuantity] = useState(1);
-  const [bundleMix, setBundleMix] = useState('both-turchese');
+  const [qtyTurchese, setQtyTurchese] = useState(1);
+  const [qtyRosa, setQtyRosa] = useState(0);
   const navigate = useNavigate();
 
+  const totalQty = qtyTurchese + qtyRosa;
+  let discount = 0;
+  if (totalQty === 2) discount = 0.15;
+  else if (totalQty === 3) discount = 0.20;
+  else if (totalQty >= 4) discount = 0.25;
+
+  const basePrice = 15.99;
+  const totalAmount = totalQty * basePrice * (1 - discount);
+
+  // Persist quantities to localStorage for the NavigationBar to pick up
+  useEffect(() => {
+    localStorage.setItem('leap_cart', JSON.stringify({ qtyTurchese, qtyRosa }));
+  }, [qtyTurchese, qtyRosa]);
+
   const handleShopNow = () => {
-    const colorParam = quantity === 2 ? bundleMix : activeColor;
-    window.location.href = `/checkout?color=${colorParam}&qty=${quantity}`;
+    if (totalQty === 0) return;
+    window.location.href = `/checkout?turchese=${qtyTurchese}&rosa=${qtyRosa}`;
   };
 
   useEffect(() => {
@@ -134,93 +148,90 @@ export default function HeroSection() {
 
         {/* Selection Area */}
         <div className="mt-8 flex flex-col items-center gap-6 w-full max-w-sm">
-          {/* Color Selectors */}
+          {/* Color Preview Selectors */}
           <div className="flex justify-center gap-4 w-full">
             <button 
               onClick={() => setActiveColor('Turchese')}
-              className={`flex-1 group flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${activeColor === 'Turchese' ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
+              className={`flex-1 group flex items-center justify-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${activeColor === 'Turchese' ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
             >
-              <div className="w-5 h-5 rounded-full bg-brand-turquoise shadow-sm" />
-              <span className={`text-sm font-bold uppercase tracking-wider ${activeColor === 'Turchese' ? 'text-charcoal-deep' : 'text-body'}`}>Turchese</span>
+              <div className="w-4 h-4 rounded-full bg-brand-turquoise shadow-sm" />
+              <span className={`text-xs font-bold uppercase tracking-wider ${activeColor === 'Turchese' ? 'text-charcoal-deep' : 'text-body'}`}>Turchese</span>
             </button>
             <button 
-              onClick={() => {
-                setActiveColor('Rosa');
-                if (quantity === 2) setBundleMix('both-rosa');
-              }}
-              className={`flex-1 group flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${activeColor === 'Rosa' ? 'border-[#E5B6D6] bg-[#F9E8F4]' : 'border-silver bg-white hover:border-gray-300'}`}
+              onClick={() => setActiveColor('Rosa')}
+              className={`flex-1 group flex items-center justify-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${activeColor === 'Rosa' ? 'border-[#E5B6D6] bg-[#F9E8F4]' : 'border-silver bg-white hover:border-gray-300'}`}
             >
-              <div className="w-5 h-5 rounded-full bg-[#E5B6D6] shadow-sm" />
-              <span className={`text-sm font-bold uppercase tracking-wider ${activeColor === 'Rosa' ? 'text-charcoal-deep' : 'text-body'}`}>Rosa Steel</span>
+              <div className="w-4 h-4 rounded-full bg-[#E5B6D6] shadow-sm" />
+              <span className={`text-xs font-bold uppercase tracking-wider ${activeColor === 'Rosa' ? 'text-charcoal-deep' : 'text-body'}`}>Rosa Steel</span>
             </button>
           </div>
 
           {/* Quantity Selectors */}
-          <div className="flex gap-4 w-full">
-            <button 
-              onClick={() => setQuantity(1)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl border-2 transition-all ${quantity === 1 ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
-            >
-              <span className={`text-sm font-bold ${quantity === 1 ? 'text-charcoal-deep' : 'text-body'}`}>1 Bottiglia</span>
-              <span className={`text-xs ${quantity === 1 ? 'text-charcoal-deep' : 'text-body'}`}>€15.99</span>
-            </button>
-            <button 
-              onClick={() => {
-                setQuantity(2);
-                setBundleMix(activeColor === 'Turchese' ? 'both-turchese' : 'both-rosa');
-              }}
-              className={`flex-1 relative flex flex-col items-center justify-center py-3 rounded-xl border-2 transition-all ${quantity === 2 ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white hover:border-gray-300'}`}
-            >
-              <div className="absolute -top-3 bg-brand-turquoise text-charcoal-deep text-[10px] font-bold px-2 py-0.5 rounded-full">SCONTO 12%</div>
-              <span className={`text-sm font-bold ${quantity === 2 ? 'text-charcoal-deep' : 'text-body'}`}>2 Bottiglie</span>
-              <span className={`text-xs font-bold ${quantity === 2 ? 'text-charcoal-deep text-brand-turquoise' : 'text-body'}`}>€28.00</span>
-            </button>
-          </div>
-
-          {/* Bundle Mix Selection - Only visible when quantity 2 is selected */}
-          {quantity === 2 && (
-            <div className="w-full animate-in fade-in slide-in-from-top-2 duration-300">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-body mb-3 text-center">Scegli la combinazione:</p>
-              <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-col gap-3 w-full bg-white p-4 rounded-2xl border border-silver shadow-sm">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-body text-center mb-1">Componi il tuo Ordine</p>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-charcoal-deep flex items-center gap-2">
+                 <div className="w-3 h-3 rounded-full bg-brand-turquoise" />
+                 Turchese
+              </span>
+              <div className="flex items-center gap-4">
                 <button 
-                  onClick={() => setBundleMix('both-turchese')}
-                  className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${bundleMix === 'both-turchese' ? 'border-brand-turquoise bg-[#f0fdfa]' : 'border-silver bg-white'}`}
+                  onClick={() => setQtyTurchese(Math.max(0, qtyTurchese - 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-charcoal-deep transition-colors"
                 >
-                  <div className="flex -space-x-1">
-                    <div className="w-4 h-4 rounded-full bg-brand-turquoise border border-white" />
-                    <div className="w-4 h-4 rounded-full bg-brand-turquoise border border-white" />
-                  </div>
-                  <span className="text-[9px] font-bold leading-tight uppercase">2 Azzurre</span>
+                  <Minus size={14} />
                 </button>
+                <span className="w-4 text-center font-bold text-lg">{qtyTurchese}</span>
                 <button 
-                  onClick={() => setBundleMix('both-rosa')}
-                  className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${bundleMix === 'both-rosa' ? 'border-[#E5B6D6] bg-[#F9E8F4]' : 'border-silver bg-white'}`}
+                  onClick={() => setQtyTurchese(qtyTurchese + 1)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(45,212,191,0.2)] hover:bg-[rgba(45,212,191,0.4)] text-brand-dark transition-colors"
                 >
-                  <div className="flex -space-x-1">
-                    <div className="w-4 h-4 rounded-full bg-[#E5B6D6] border border-white" />
-                    <div className="w-4 h-4 rounded-full bg-[#E5B6D6] border border-white" />
-                  </div>
-                  <span className="text-[9px] font-bold leading-tight uppercase">2 Rosa</span>
-                </button>
-                <button 
-                  onClick={() => setBundleMix('one-each')}
-                  className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all ${bundleMix === 'one-each' ? 'border-charcoal-deep bg-gray-50' : 'border-silver bg-white'}`}
-                >
-                  <div className="flex -space-x-1">
-                    <div className="w-4 h-4 rounded-full bg-brand-turquoise border border-white" />
-                    <div className="w-4 h-4 rounded-full bg-[#E5B6D6] border border-white" />
-                  </div>
-                  <span className="text-[9px] font-bold leading-tight uppercase">1 e 1</span>
+                  <Plus size={14} />
                 </button>
               </div>
             </div>
-          )}
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-charcoal-deep flex items-center gap-2">
+                 <div className="w-3 h-3 rounded-full bg-[#E5B6D6]" />
+                 Rosa Steel
+              </span>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setQtyRosa(Math.max(0, qtyRosa - 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-charcoal-deep transition-colors"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="w-4 text-center font-bold text-lg">{qtyRosa}</span>
+                <button 
+                  onClick={() => setQtyRosa(qtyRosa + 1)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F9E8F4] hover:bg-[#ebd0e8] text-[#975881] transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Discount Banner */}
+            {discount > 0 && (
+              <div className="mt-2 bg-brand-turquoise/10 border border-brand-turquoise/30 rounded-xl p-2 text-center">
+                <span className="text-brand-dark font-bold text-xs">SCONTO {(discount * 100).toFixed(0)}% APPLICATO</span>
+              </div>
+            )}
+            {totalQty === 1 && (
+              <div className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-2 text-center">
+                <span className="text-gray-500 font-medium text-[10px] uppercase">Aggiungi 1 per il 15% di sconto</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* CTA Row */}
-        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <PillButton variant="filled" size="md" onClick={handleShopNow}>
-            Acquista Ora - €{quantity === 2 ? '28.00' : '15.99'}
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
+          <PillButton variant="filled" size="md" onClick={handleShopNow} className={totalQty === 0 ? "opacity-50 cursor-not-allowed" : ""}>
+            {totalQty === 0 ? 'Seleziona Quantità' : `Acquista Ora - €${totalAmount.toFixed(2)}`}
           </PillButton>
           <PillButton
             variant="outlined"
