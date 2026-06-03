@@ -199,10 +199,14 @@ app.post('/api/create-payment-intent', async (req, res) => {
     });
 
     const orderId = `ord_${Date.now()}`;
-    await db.query(
-      'INSERT INTO orders (id, amount, currency, status, stripe_payment_intent, customer_email) VALUES ($1, $2, $3, $4, $5, $6)',
-      [orderId, amount, 'eur', 'pending', paymentIntent.id, email || 'no-email']
-    );
+    try {
+      await db.query(
+        'INSERT INTO orders (id, amount, currency, status, stripe_payment_intent, customer_email) VALUES ($1, $2, $3, $4, $5, $6)',
+        [orderId, amount, 'eur', 'pending', paymentIntent.id, email || 'no-email']
+      );
+    } catch (dbErr) {
+      console.warn('Database logging failed, but proceeding with payment:', dbErr);
+    }
 
     res.send({ clientSecret: paymentIntent.client_secret });
   } catch (error) {

@@ -55,6 +55,15 @@
       "billing_postal_code": "30020",
       "billing_country": "IT",
       "product_variant": "1x Turchese + 3x Rosa Steel"
+    },
+    {
+      "id": "ord_1780491456947",
+      "amount": 1599,
+      "currency": "eur",
+      "status": "pending",
+      "stripe_payment_intent": "pi_3TeEMWRtWBelKXuy1BGMeJXS",
+      "customer_email": "test@example.com",
+      "created_at": "2026-06-03T12:57:36.948Z"
     }
   ],
   "visits": [
