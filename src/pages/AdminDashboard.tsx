@@ -7,39 +7,19 @@ export default function AdminDashboard() {
   const { token, logout } = useAuth();
   const [stats, setStats] = useState({ visits: 0, uniqueVisits: 0, revenue: 0, orders: [] as any[] });
   const [loading, setLoading] = useState(true);
-
   const fetchStats = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/admin/stats', {
+      const res = await fetch('/api/admin/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        const demoOrder = {
-          id: 'ord_demo_filippo',
-          customer_email: 'filippo_test@gmail.com',
-          amount: 1599,
-          status: 'paid',
-          created_at: new Date().toISOString(),
-          shipping_name: 'Filippo Castellan',
-          shipping_address: 'Via Roma 123',
-          shipping_city: 'Milano',
-          shipping_postal_code: '20100',
-          billing_address: 'Via Roma 123',
-          billing_city: 'Milano',
-          billing_postal_code: '20100'
-        };
-
-        // Uniamo i dati reali con quello demo per test
-        setStats({
-          ...data,
-          orders: data.orders.length > 0 ? data.orders : [demoOrder]
-        });
+        setStats(data);
       } else if (res.status === 401 || res.status === 403) {
         logout();
       }
     } catch (err) {
-      console.error('Failed to load stats');
+      console.error('Failed to load stats', err);
     } finally {
       setLoading(false);
     }
@@ -47,6 +27,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchStats();
+    // Auto refresh every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, [token, logout]);
 
   if (loading) {
@@ -70,12 +53,7 @@ export default function AdminDashboard() {
           <div className="font-bold text-xl tracking-tight">LEAP <span className="text-brand-turquoise font-normal">ADMIN</span></div>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={fetchStats}
-            className="flex items-center text-sm bg-brand-turquoise bg-opacity-10 text-brand-turquoise px-4 py-2 rounded-pill hover:bg-opacity-20 transition-all font-bold"
-          >
-            Aggiorna Dati
-          </button>
+
           <button 
             onClick={logout}
             className="flex items-center text-sm text-body hover:text-red-500 transition-colors"
@@ -201,6 +179,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+
+
     </div>
   );
 }
