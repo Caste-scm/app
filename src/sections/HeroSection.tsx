@@ -64,6 +64,9 @@ export default function HeroSection() {
     const cards = cardsRef.current;
     if (!section || !product || !scrollIndicator || !cards) return;
 
+    let handleMouseMove: (e: MouseEvent) => void;
+    let handleMouseLeave: () => void;
+
     const ctx = gsap.context(() => {
       // Product float animation
       gsap.to(product.querySelector('.product-image'), {
@@ -73,6 +76,31 @@ export default function HeroSection() {
         yoyo: true,
         repeat: -1,
       });
+
+      // Hover 3D effect
+      handleMouseMove = (e: MouseEvent) => {
+        const { clientX, clientY } = e;
+        const xPos = (clientX / window.innerWidth - 0.5) * 30; 
+        const yPos = (clientY / window.innerHeight - 0.5) * -30;
+        gsap.to(product.querySelector('.product-image'), {
+          rotationY: xPos,
+          rotationX: yPos,
+          ease: 'power2.out',
+          duration: 1
+        });
+      };
+
+      handleMouseLeave = () => {
+        gsap.to(product.querySelector('.product-image'), {
+          rotationY: 0,
+          rotationX: 0,
+          ease: 'power3.out',
+          duration: 1.5
+        });
+      };
+
+      section.addEventListener('mousemove', handleMouseMove);
+      section.addEventListener('mouseleave', handleMouseLeave);
 
       // Scroll indicator fade out
       gsap.to(scrollIndicator, {
@@ -107,7 +135,11 @@ export default function HeroSection() {
       );
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      if (handleMouseMove) section.removeEventListener('mousemove', handleMouseMove);
+      if (handleMouseLeave) section.removeEventListener('mouseleave', handleMouseLeave);
+    };
   }, []);
 
   return (
@@ -167,7 +199,7 @@ export default function HeroSection() {
           </div>
 
           {/* Quantity Selectors */}
-          <div className="flex flex-col gap-3 w-full bg-white p-4 rounded-2xl border border-silver shadow-sm">
+          <div className="flex flex-col gap-3 w-full backdrop-blur-xl bg-white/60 border border-white/50 p-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
             <p className="text-[10px] uppercase tracking-widest font-bold text-body text-center mb-1">Componi il tuo Ordine</p>
             
             <div className="flex items-center justify-between">
@@ -178,14 +210,14 @@ export default function HeroSection() {
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setQtyTurchese(Math.max(0, qtyTurchese - 1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-charcoal-deep transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-charcoal-deep transition-all active:scale-90"
                 >
                   <Minus size={14} />
                 </button>
                 <span className="w-4 text-center font-bold text-lg">{qtyTurchese}</span>
                 <button 
                   onClick={() => setQtyTurchese(qtyTurchese + 1)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(45,212,191,0.2)] hover:bg-[rgba(45,212,191,0.4)] text-brand-dark transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(45,212,191,0.2)] hover:bg-[rgba(45,212,191,0.4)] text-brand-dark transition-all active:scale-90"
                 >
                   <Plus size={14} />
                 </button>
@@ -200,14 +232,14 @@ export default function HeroSection() {
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setQtyRosa(Math.max(0, qtyRosa - 1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-charcoal-deep transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-charcoal-deep transition-all active:scale-90"
                 >
                   <Minus size={14} />
                 </button>
                 <span className="w-4 text-center font-bold text-lg">{qtyRosa}</span>
                 <button 
                   onClick={() => setQtyRosa(qtyRosa + 1)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F9E8F4] hover:bg-[#ebd0e8] text-[#975881] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F9E8F4] hover:bg-[#ebd0e8] text-[#975881] transition-all active:scale-90"
                 >
                   <Plus size={14} />
                 </button>
@@ -216,7 +248,7 @@ export default function HeroSection() {
 
             {/* Discount Banner */}
             {discount > 0 && (
-              <div className="mt-2 bg-brand-turquoise/10 border border-brand-turquoise/30 rounded-xl p-2 text-center">
+              <div className="mt-2 bg-brand-turquoise/10 border border-brand-turquoise/30 rounded-xl p-2 text-center animate-pop-in">
                 <span className="text-brand-dark font-bold text-xs">SCONTO {(discount * 100).toFixed(0)}% APPLICATO</span>
               </div>
             )}
@@ -230,7 +262,7 @@ export default function HeroSection() {
 
         {/* CTA Row */}
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
-          <PillButton variant="filled" size="md" onClick={handleShopNow} className={totalQty === 0 ? "opacity-50 cursor-not-allowed" : ""}>
+          <PillButton variant="filled" size="md" onClick={handleShopNow} className={totalQty === 0 ? "opacity-50 cursor-not-allowed" : "animate-pulse-glow"}>
             {totalQty === 0 ? 'Select Quantity' : `Buy Now - \u20ac${totalAmount.toFixed(2)}`}
           </PillButton>
           <PillButton
@@ -249,6 +281,7 @@ export default function HeroSection() {
       <div
         ref={productRef}
         className="relative z-10 flex justify-center mt-12 md:mt-16 px-4"
+        style={{ perspective: "1000px" }}
       >
         <div className="product-image relative w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px]">
           <img

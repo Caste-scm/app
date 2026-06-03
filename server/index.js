@@ -52,8 +52,14 @@ const db = {
 
     // Simplified query handling for common operations
     if (text.includes('INSERT INTO orders')) {
-      const [id, amount, currency, status, spi, email] = params;
-      data.orders.push({ id, amount, currency, status, stripe_payment_intent: spi, customer_email: email, created_at: new Date().toISOString() });
+      if (params.length >= 16) {
+        // Full insert from webhook (16 params)
+        data.orders.push({ id: params[0], amount: params[1], currency: params[2], status: params[3], stripe_payment_intent: params[4], customer_email: params[5], shipping_name: params[6], shipping_address: params[7], shipping_city: params[8], shipping_postal_code: params[9], shipping_country: params[10], billing_address: params[11], billing_city: params[12], billing_postal_code: params[13], billing_country: params[14], product_variant: params[15], created_at: new Date().toISOString() });
+      } else {
+        // Short insert from create-payment-intent (7 params)
+        const [id, amount, currency, status, spi, email, variant] = params;
+        data.orders.push({ id, amount, currency, status, stripe_payment_intent: spi, customer_email: email, product_variant: variant || 'Standard', created_at: new Date().toISOString() });
+      }
     } 
     else if (text.includes('UPDATE orders SET status = $1')) {
       const isSaveOrder = text.includes('product_variant = $11');
@@ -72,6 +78,10 @@ const db = {
         order.billing_country = params[9];
         if (isSaveOrder) order.product_variant = params[10];
       }
+    }
+    else if (text.includes('SELECT * FROM orders WHERE stripe_payment_intent')) {
+      const matched = data.orders.filter(o => o.stripe_payment_intent === params[0]);
+      return { rows: matched, rowCount: matched.length };
     }
     else if (text.includes('INSERT INTO page_visits')) {
       data.visits.push({ visitor_id: params[0], is_unique: params[1], visited_at: new Date().toISOString() });
@@ -191,21 +201,34 @@ app.post('/api/create-payment-intent', async (req, res) => {
 
     if (amount <= 0) return res.status(400).json({ error: 'Invalid quantity' });
 
+    // Build variant string for metadata
+    const variantParts = [];
+    if (parseInt(qtyTurchese) > 0) variantParts.push(`${qtyTurchese}x Turchese`);
+    if (parseInt(qtyRosa) > 0) variantParts.push(`${qtyRosa}x Rosa Steel`);
+    const variant = variantParts.join(' + ') || 'Standard';
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: 'eur',
       receipt_email: email,
       automatic_payment_methods: { enabled: true },
+      metadata: {
+        product_variant: variant,
+        qty_turchese: String(qtyTurchese),
+        qty_rosa: String(qtyRosa),
+        discount_pct: String(Math.round(discount * 100))
+      }
     });
 
+    // Pre-create order as 'pending' — webhook will finalize it
     const orderId = `ord_${Date.now()}`;
     try {
       await db.query(
-        'INSERT INTO orders (id, amount, currency, status, stripe_payment_intent, customer_email) VALUES ($1, $2, $3, $4, $5, $6)',
-        [orderId, amount, 'eur', 'pending', paymentIntent.id, email || 'no-email']
+        'INSERT INTO orders (id, amount, currency, status, stripe_payment_intent, customer_email, product_variant) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [orderId, amount, 'eur', 'pending', paymentIntent.id, email || 'no-email', variant]
       );
     } catch (dbErr) {
-      console.warn('Database logging failed, but proceeding with payment:', dbErr);
+      console.warn('DB pre-insert failed, webhook will handle:', dbErr);
     }
 
     res.send({ clientSecret: paymentIntent.client_secret });
@@ -235,23 +258,62 @@ app.post('/api/webhook', async (req, res) => {
     const paymentIntent = event.data.object;
     const shipping = paymentIntent.shipping;
     const billing = paymentIntent.billing_details;
+    const variant = paymentIntent.metadata?.product_variant || 'Standard';
     
-    await db.query(
-      'UPDATE orders SET status = $1, shipping_name = $2, shipping_address = $3, shipping_city = $4, shipping_postal_code = $5, shipping_country = $6, billing_address = $7, billing_city = $8, billing_postal_code = $9, billing_country = $10 WHERE stripe_payment_intent = $11', 
-      [
-        'paid', 
-        shipping?.name || '', 
-        shipping?.address?.line1 || '', 
-        shipping?.address?.city || '', 
-        shipping?.address?.postal_code || '', 
-        shipping?.address?.country || '',
-        billing?.address?.line1 || shipping?.address?.line1 || '',
-        billing?.address?.city || shipping?.address?.city || '',
-        billing?.address?.postal_code || shipping?.address?.postal_code || '',
-        billing?.address?.country || shipping?.address?.country || '',
-        paymentIntent.id
-      ]
-    );
+    try {
+      // Check if order already exists (pre-created at checkout)
+      const existing = await db.query(
+        'SELECT * FROM orders WHERE stripe_payment_intent = $1',
+        [paymentIntent.id]
+      );
+
+      if (existing.rows && existing.rows.length > 0) {
+        // Update existing pending order to paid
+        await db.query(
+          'UPDATE orders SET status = $1, shipping_name = $2, shipping_address = $3, shipping_city = $4, shipping_postal_code = $5, shipping_country = $6, billing_address = $7, billing_city = $8, billing_postal_code = $9, billing_country = $10, product_variant = $11 WHERE stripe_payment_intent = $12', 
+          [
+            'paid', 
+            shipping?.name || billing?.name || '', 
+            shipping?.address?.line1 || '', 
+            shipping?.address?.city || '', 
+            shipping?.address?.postal_code || '', 
+            shipping?.address?.country || '',
+            billing?.address?.line1 || shipping?.address?.line1 || '',
+            billing?.address?.city || shipping?.address?.city || '',
+            billing?.address?.postal_code || shipping?.address?.postal_code || '',
+            billing?.address?.country || shipping?.address?.country || '',
+            variant,
+            paymentIntent.id
+          ]
+        );
+      } else {
+        // Webhook arrived before pre-insert — create order directly as paid
+        const orderId = `ord_${Date.now()}`;
+        await db.query(
+          'INSERT INTO orders (id, amount, currency, status, stripe_payment_intent, customer_email, shipping_name, shipping_address, shipping_city, shipping_postal_code, shipping_country, billing_address, billing_city, billing_postal_code, billing_country, product_variant) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)',
+          [
+            orderId,
+            paymentIntent.amount,
+            paymentIntent.currency,
+            'paid',
+            paymentIntent.id,
+            paymentIntent.receipt_email || billing?.email || '',
+            shipping?.name || billing?.name || '',
+            shipping?.address?.line1 || '',
+            shipping?.address?.city || '',
+            shipping?.address?.postal_code || '',
+            shipping?.address?.country || '',
+            billing?.address?.line1 || '',
+            billing?.address?.city || '',
+            billing?.address?.postal_code || '',
+            billing?.address?.country || '',
+            variant
+          ]
+        );
+      }
+    } catch (dbErr) {
+      console.error('Webhook DB error:', dbErr);
+    }
   }
   res.send({received: true});
 });

@@ -82,6 +82,35 @@
       "stripe_payment_intent": "pi_3TeEaGRtWBelKXuy1UpdnHOb",
       "customer_email": "test@example.com",
       "created_at": "2026-06-03T13:11:48.774Z"
+    },
+    {
+      "id": "ord_1780495018245",
+      "amount": 1599,
+      "currency": "eur",
+      "status": "paid",
+      "stripe_payment_intent": "pi_3TeFHyRtWBelKXuy1t8wfAkN",
+      "customer_email": "test@example.com",
+      "product_variant": "1x Turchese",
+      "created_at": "2026-06-03T13:56:58.245Z",
+      "shipping_name": "piro paro",
+      "shipping_address": "Via Aquileia",
+      "shipping_city": "quarto d'altino",
+      "shipping_postal_code": "30020",
+      "shipping_country": "IT",
+      "billing_address": "Via Aquileia",
+      "billing_city": "quarto d'altino",
+      "billing_postal_code": "30020",
+      "billing_country": "IT"
+    },
+    {
+      "id": "ord_1780495389309",
+      "amount": 1599,
+      "currency": "eur",
+      "status": "pending",
+      "stripe_payment_intent": "pi_3TeFNxRtWBelKXuy0MwWHYmL",
+      "customer_email": "test@example.com",
+      "product_variant": "1x Turchese",
+      "created_at": "2026-06-03T14:03:09.309Z"
     }
   ],
   "visits": [
@@ -139,6 +168,21 @@
       "visitor_id": "v_fhjnbkv7h",
       "is_unique": false,
       "visited_at": "2026-06-03T12:49:26.211Z"
+    },
+    {
+      "visitor_id": "v_fhjnbkv7h",
+      "is_unique": false,
+      "visited_at": "2026-06-03T13:56:55.706Z"
+    },
+    {
+      "visitor_id": "v_fhjnbkv7h",
+      "is_unique": false,
+      "visited_at": "2026-06-03T14:03:03.682Z"
+    },
+    {
+      "visitor_id": "v_fhjnbkv7h",
+      "is_unique": false,
+      "visited_at": "2026-06-03T14:03:17.725Z"
     }
   ],
   "admin_users": [
