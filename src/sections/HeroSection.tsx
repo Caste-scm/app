@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useNavigate } from 'react-router';
+
 import { ChevronDown, Play, Droplets, Lock, Leaf, Plus, Minus } from 'lucide-react';
 import PillButton from '@/components/PillButton';
 import TextRevealAnimation from '@/components/TextRevealAnimation';
@@ -36,7 +36,7 @@ export default function HeroSection() {
   const [activeColor, setActiveColor] = useState('Turchese');
   const [qtyTurchese, setQtyTurchese] = useState(1);
   const [qtyRosa, setQtyRosa] = useState(0);
-  const navigate = useNavigate();
+
 
   const totalQty = qtyTurchese + qtyRosa;
   let discount = 0;
