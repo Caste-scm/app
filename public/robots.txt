@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://leappet.com/sitemap.xml
