@@ -9,13 +9,22 @@ import AdminDashboard from './pages/AdminDashboard.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 
+import TrackOrder from './pages/TrackOrder.tsx'
+import PrivacyPolicy from './pages/PrivacyPolicy.tsx'
+import CookiePolicy from './pages/CookiePolicy.tsx'
+import CookieBanner from './components/CookieBanner.tsx'
+
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
     <AuthProvider>
+      <CookieBanner />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/track-order" element={<TrackOrder />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin" element={
           <ProtectedRoute>

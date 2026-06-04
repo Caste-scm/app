@@ -6,6 +6,7 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -17,6 +18,38 @@ const __dirname = dirname(__filename);
 const { Pool } = pkg;
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
+
+// ==========================================
+// RATE LIMITERS
+// ==========================================
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts from this IP, please try again after 15 minutes' }
+});
+
+const checkoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 15,
+  message: { error: 'Too many checkout attempts from this IP, please try again later' }
+});
+
+const trackingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many tracking requests from this IP, please try again later' }
+});
+
+const webhookLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 100,
+});
 
 // Se siamo in locale possiamo usare SQLite come fallback temporaneo per comodità,
 // ma visto che l'utente deployerà su Vercel, Postgres è obbligatorio per prod.
@@ -62,8 +95,14 @@ const db = {
       }
     } 
     else if (text.includes('UPDATE orders SET status = $1')) {
-      const isSaveOrder = text.includes('product_variant = $11');
-      const spi = params[isSaveOrder ? 11 : 10];
+      let spi;
+      if (text.includes('customer_email = $12')) {
+        spi = params[12];
+      } else if (text.includes('product_variant = $11')) {
+        spi = params[11];
+      } else {
+        spi = params[10];
+      }
       const order = data.orders.find(o => o.stripe_payment_intent === spi);
       if (order) {
         order.status = params[0];
@@ -76,11 +115,32 @@ const db = {
         order.billing_city = params[7];
         order.billing_postal_code = params[8];
         order.billing_country = params[9];
-        if (isSaveOrder) order.product_variant = params[10];
+        
+        if (text.includes('customer_email = $12')) {
+           order.product_variant = params[10];
+           order.customer_email = params[11];
+        } else if (text.includes('product_variant = $11')) {
+           order.product_variant = params[10];
+        }
       }
+    }
+    else if (text.includes('SELECT id FROM orders WHERE stripe_payment_intent')) {
+      const matched = data.orders.filter(o => o.stripe_payment_intent === params[0]);
+      return { rows: matched, rowCount: matched.length };
     }
     else if (text.includes('SELECT * FROM orders WHERE stripe_payment_intent')) {
       const matched = data.orders.filter(o => o.stripe_payment_intent === params[0]);
+      return { rows: matched, rowCount: matched.length };
+    }
+    else if (text.includes('UPDATE orders SET tracking_number = $1')) {
+      const order = data.orders.find(o => o.id === params[1]);
+      if (order) {
+        order.tracking_number = params[0];
+      }
+      return { rowCount: order ? 1 : 0 };
+    }
+    else if (text.includes('SELECT status, tracking_number FROM orders WHERE customer_email = $1 AND id = $2')) {
+      const matched = data.orders.filter(o => o.customer_email.toLowerCase() === params[0].toLowerCase() && o.id === params[1]);
       return { rows: matched, rowCount: matched.length };
     }
     else if (text.includes('INSERT INTO page_visits')) {
@@ -130,6 +190,7 @@ async function initDb() {
           billing_postal_code VARCHAR(20),
           billing_country VARCHAR(100),
           product_variant VARCHAR(50) DEFAULT 'Standard',
+          tracking_number VARCHAR(255),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS page_visits (
@@ -144,6 +205,12 @@ async function initDb() {
           password_hash VARCHAR(255)
         );
       `);
+      
+      try {
+        await pool.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(255)');
+      } catch (e) {
+        console.error('Column tracking_number could not be added:', e.message);
+      }
       // Inserisci utente admin di default se non esiste leggendo dalle variabili d'ambiente
       const adminEmail = process.env.ADMIN_EMAIL || 'filippocastellan27@gmail.com';
       // Fallback password solo per test, su Vercel DEVE essere impostata ADMIN_PASSWORD
@@ -185,7 +252,7 @@ app.use(express.json());
 // STOREFRONT ROUTES
 // ==========================================
 
-app.post('/api/create-payment-intent', async (req, res) => {
+app.post('/api/create-payment-intent', checkoutLimiter, async (req, res) => {
   try {
     const { email, qtyTurchese = 0, qtyRosa = 0 } = req.body;
     const totalQty = (parseInt(qtyTurchese) || 0) + (parseInt(qtyRosa) || 0);
@@ -237,7 +304,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
   }
 });
 
-app.post('/api/track-visit', async (req, res) => {
+app.post('/api/track-visit', globalLimiter, async (req, res) => {
   const { visitorId, isUnique } = req.body;
   try {
     await db.query('INSERT INTO page_visits (visitor_id, is_unique) VALUES ($1, $2)', [visitorId, isUnique]);
@@ -245,7 +312,7 @@ app.post('/api/track-visit', async (req, res) => {
   res.send({ success: true });
 });
 
-app.post('/api/webhook', async (req, res) => {
+app.post('/api/webhook', webhookLimiter, async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
   try {
@@ -324,7 +391,7 @@ app.post('/api/webhook', async (req, res) => {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey_12345';
 
-app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   
   try {
@@ -353,7 +420,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
-app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+app.get('/api/admin/stats', authenticateToken, globalLimiter, async (req, res) => {
   try {
     const totalVisits = (await db.query('SELECT COUNT(*) FROM page_visits')).rows[0].count;
     const uniqueVisits = (await db.query('SELECT COUNT(*) FROM page_visits WHERE is_unique = TRUE')).rows[0].count;
@@ -372,12 +439,22 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/save-order', async (req, res) => {
-  const { paymentIntentId, shipping, billing, variant } = req.body;
+app.post('/api/admin/update-tracking', authenticateToken, globalLimiter, async (req, res) => {
+  const { orderId, trackingNumber } = req.body;
+  try {
+    await db.query('UPDATE orders SET tracking_number = $1 WHERE id = $2', [trackingNumber, orderId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/save-order', globalLimiter, async (req, res) => {
+  const { paymentIntentId, shipping, billing, variant, email } = req.body;
   
   try {
     await db.query(
-      'UPDATE orders SET status = $1, shipping_name = $2, shipping_address = $3, shipping_city = $4, shipping_postal_code = $5, shipping_country = $6, billing_address = $7, billing_city = $8, billing_postal_code = $9, billing_country = $10, product_variant = $11 WHERE stripe_payment_intent = $12', 
+      'UPDATE orders SET status = $1, shipping_name = $2, shipping_address = $3, shipping_city = $4, shipping_postal_code = $5, shipping_country = $6, billing_address = $7, billing_city = $8, billing_postal_code = $9, billing_country = $10, product_variant = $11, customer_email = $12 WHERE stripe_payment_intent = $13', 
       [
         'paid', 
         shipping?.name || '', 
@@ -390,13 +467,27 @@ app.post('/api/save-order', async (req, res) => {
         billing?.address?.postal_code || shipping?.address?.postal_code || '',
         billing?.address?.country || shipping?.address?.country || '',
         variant || 'Standard',
+        email || 'no-email',
         paymentIntentId
       ]
     );
-    res.json({ success: true });
+    const result = await db.query('SELECT id FROM orders WHERE stripe_payment_intent = $1', [paymentIntentId]);
+    const orderId = result.rows[0]?.id;
+    res.json({ success: true, orderId });
   } catch (error) {
     console.error('Error saving order:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/track-order', trackingLimiter, async (req, res) => {
+  const { email, orderId } = req.query;
+  try {
+    const result = await db.query('SELECT status, tracking_number FROM orders WHERE customer_email = $1 AND id = $2', [email, orderId]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Order not found' });
+    res.json({ order: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

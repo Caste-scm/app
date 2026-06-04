@@ -8,10 +8,19 @@ import HowItWorksSection from '@/sections/HowItWorksSection';
 import ProductDetailsSection from '@/sections/ProductDetailsSection';
 import TestimonialsSection from '@/sections/TestimonialsSection';
 import DogUsageSection from '@/sections/DogUsageSection';
+import FAQSection from '@/sections/FAQSection';
 import LifestyleCTASection from '@/sections/LifestyleCTASection';
 
 export default function App() {
   useEffect(() => {
+    // Scroll to hash on load if present
+    if (window.location.hash) {
+      setTimeout(() => {
+        const el = document.querySelector(window.location.hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+    
     // Track visit
     const trackVisit = async () => {
       try {
@@ -40,6 +49,7 @@ export default function App() {
           <ProductDetailsSection />
           <TestimonialsSection />
           <DogUsageSection />
+          <FAQSection />
           <LifestyleCTASection />
         </main>
         <Footer />

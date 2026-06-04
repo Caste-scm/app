@@ -5,6 +5,8 @@ import confetti from 'canvas-confetti';
 
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const orderId = searchParams.get('orderId');
 
   useEffect(() => {
     // Confetti celebration for purchase
@@ -36,7 +38,14 @@ export default function CheckoutSuccess() {
           </div>
           <div>
             <p className="text-sm font-bold text-charcoal-deep">Order Received</p>
-            <p className="text-xs text-body">You'll receive a tracking email shortly.</p>
+            {orderId ? (
+               <p className="text-xs text-body">
+                 Your Order ID: <span className="font-mono font-bold bg-white text-charcoal-deep px-1 py-0.5 rounded border border-gray-200">{orderId}</span><br />
+                 You can use this ID to track your order.
+               </p>
+            ) : (
+               <p className="text-xs text-body">You'll receive a tracking email shortly.</p>
+            )}
           </div>
         </div>
 

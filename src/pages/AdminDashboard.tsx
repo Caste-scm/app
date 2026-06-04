@@ -7,6 +7,33 @@ export default function AdminDashboard() {
   const { token, logout } = useAuth();
   const [stats, setStats] = useState({ visits: 0, uniqueVisits: 0, revenue: 0, orders: [] as any[] });
   const [loading, setLoading] = useState(true);
+  const [trackingInput, setTrackingInput] = useState<{[key: string]: string}>({});
+
+  const handleUpdateTracking = async (orderId: string) => {
+    const trackingNumber = trackingInput[orderId];
+    if (!trackingNumber) return;
+    try {
+      const res = await fetch('/api/admin/update-tracking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ orderId, trackingNumber })
+      });
+      if (res.ok) {
+        alert('Tracking updated successfully!');
+        setTrackingInput(prev => ({...prev, [orderId]: ''}));
+        fetchStats();
+      } else {
+        alert('Failed to update tracking');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating tracking');
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/admin/stats', {
@@ -168,6 +195,34 @@ export default function AdminDashboard() {
                                 {order.product_variant || 'Turchese'}
                               </span>
                             </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {order.status === 'paid' && (
+                        <div className="mt-2 pt-2 border-t border-dashed border-silver flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-charcoal uppercase">Tracking:</span>
+                            {order.tracking_number ? (
+                              <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{order.tracking_number}</span>
+                            ) : (
+                              <span className="text-[10px] text-orange-500 italic bg-orange-50 px-2 py-1 rounded">Not set</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                             <input 
+                               type="text" 
+                               placeholder={order.tracking_number ? "Update track #" : "Enter track #"}
+                               className="border border-silver rounded px-2 py-1 text-xs w-32 focus:outline-none focus:border-brand-turquoise"
+                               value={trackingInput[order.id] || ''}
+                               onChange={(e) => setTrackingInput({...trackingInput, [order.id]: e.target.value})}
+                             />
+                             <button 
+                               onClick={() => handleUpdateTracking(order.id)}
+                               className="bg-charcoal-deep text-white px-3 py-1 rounded text-xs font-bold hover:bg-brand-turquoise hover:text-charcoal-deep transition-colors"
+                             >
+                               Save
+                             </button>
                           </div>
                         </div>
                       )}

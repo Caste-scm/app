@@ -10,6 +10,7 @@ const QUICK_LINKS = [
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Specifications', href: '#specs' },
   { label: 'Shipping', href: '#' },
+  { label: 'Track Order', href: '/track-order' },
   { label: 'FAQ', href: '#faq' },
 ];
 
@@ -54,24 +55,33 @@ export default function Footer() {
 
   const handleLinkClick = (href: string) => {
     if (href.startsWith('#')) {
-      const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      if (window.location.pathname !== '/') {
+        window.location.href = '/' + href;
+      } else {
+        const el = document.querySelector(href);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.location.href = href;
     }
   };
 
   return (
     <footer ref={footerRef} className="w-full bg-charcoal-deep pt-16 pb-8">
       <div className="mx-auto max-w-[1200px] page-padding">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
           {/* Brand */}
           <div className="footer-animate">
           <div className="footer-animate flex items-center gap-2 mb-3">
             <img src="/assets/logo.png" alt="LEAP Logo" className="h-7 w-7 object-contain" />
             <h3 className="text-[14px] font-bold tracking-[0.2em] text-white">LEAP</h3>
           </div>
-            <p className="text-body text-[rgba(255,255,255,0.6)]">
+            <p className="text-body text-[rgba(255,255,255,0.6)] mb-2">
               Innovative hydration for modern dogs.
             </p>
+            <a href="mailto:supportleappet@gmail.com" className="text-sm font-medium text-brand-turquoise hover:text-white transition-colors">
+              supportleappet@gmail.com
+            </a>
           </div>
 
           {/* Quick Links */}
@@ -88,6 +98,23 @@ export default function Footer() {
                   </button>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Legal Links */}
+          <div className="footer-animate">
+            <h4 className="text-label text-white mb-4">Legal</h4>
+            <ul className="flex flex-col gap-2">
+              <li>
+                <button onClick={() => window.location.href = '/privacy-policy'} className="text-sm text-[rgba(255,255,255,0.6)] hover:text-brand-turquoise transition-colors duration-200">
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button onClick={() => window.location.href = '/cookie-policy'} className="text-sm text-[rgba(255,255,255,0.6)] hover:text-brand-turquoise transition-colors duration-200">
+                  Cookie Policy
+                </button>
+              </li>
             </ul>
           </div>
 

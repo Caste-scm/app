@@ -31,6 +31,7 @@ function getCartFromURL() {
 function CheckoutForm({ totalAmount }: { totalAmount: number }) {
   const stripe = useStripe();
   const elements = useElements();
+  const [email, setEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -38,7 +39,10 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !email) {
+      if (!email) setMessage("Please enter your email address for order tracking.");
+      return;
+    }
 
     setIsLoading(true);
 
@@ -68,21 +72,26 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
       if (qtyTurchese > 0) variantParts.push(`${qtyTurchese}x Turchese`);
       if (qtyRosa > 0) variantParts.push(`${qtyRosa}x Rosa Steel`);
 
+      let orderIdStr = '';
       try {
-        await fetch('/api/save-order', {
+        const res = await fetch('/api/save-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentIntentId: paymentIntent.id,
             shipping: shippingData,
-            variant: variantParts.join(' + ')
+            variant: variantParts.join(' + '),
+            email: email
           })
         });
+        const data = await res.json();
+        if (data.orderId) orderIdStr = data.orderId;
       } catch (err) {
         console.error('Failed to sync order to DB', err);
       }
       
-      navigate('/checkout/success', { replace: true });
+      const searchStr = orderIdStr ? `?orderId=${orderIdStr}` : '';
+      navigate('/checkout/success' + searchStr, { replace: true });
     }
     
     setIsLoading(false);
@@ -90,11 +99,23 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
 
   return (
     <form id="payment-form" onSubmit={handleSubmit} className="w-full max-w-md mx-auto mt-8">
+      <div className="mb-6">
+        <h3 className="text-sm font-bold text-charcoal-deep mb-3">Contact Information</h3>
+        <input 
+          type="email" 
+          required 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)} 
+          placeholder="Email address (for order tracking)" 
+          className="w-full border border-silver rounded-md p-3 focus:outline-brand-turquoise" 
+        />
+      </div>
+
       <div className="mb-8">
         <h3 className="text-sm font-bold text-charcoal-deep mb-4">Shipping & Billing Details</h3>
         <AddressElement options={{ 
           mode: 'shipping', 
-          allowedCountries: ['IT'],
+          allowedCountries: ['IT', 'FR', 'DE', 'ES', 'AT']
         }} />
       </div>
       

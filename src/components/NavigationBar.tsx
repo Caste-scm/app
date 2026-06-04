@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Menu, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,6 +17,7 @@ export default function NavigationBar() {
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const nav = navRef.current;
@@ -66,6 +68,13 @@ export default function NavigationBar() {
       window.location.href = href;
       return;
     }
+    
+    // Fallback: If it's a hash link and we are not on the homepage, route to /#hash
+    if (window.location.pathname !== '/') {
+      navigate('/' + href);
+      return;
+    }
+
     const el = document.querySelector(href);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -82,10 +91,10 @@ export default function NavigationBar() {
     >
       <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between page-padding">
         {/* Logo */}
-        <a href="/" className="flex items-center gap-2 group">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 group cursor-pointer border-none bg-transparent hover:opacity-80 transition-opacity">
           <img src="/assets/logo.png" alt="LEAP Logo" className="h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110" />
           <span className="text-[14px] font-bold tracking-[0.2em] text-charcoal-deep">LEAP</span>
-        </a>
+        </button>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-1">
